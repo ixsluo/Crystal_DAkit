@@ -5,6 +5,7 @@ import cdakit
 import cdakit.log
 import cdakit.prepare_vasp
 import cdakit.find_spg
+import cdakit.match_structure
 
 
 def main(verbose: int, **kwargs):
@@ -26,6 +27,7 @@ def cli():
     # add subparser to subparsers
     cdakit.prepare_vasp.add_subparser(subparsers)
     cdakit.find_spg.add_subparser(subparsers)
+    cdakit.match_structure.add_subparser(subparsers)
     # parse
     args, unknown_args = parser.parse_known_args()
     # calling main
