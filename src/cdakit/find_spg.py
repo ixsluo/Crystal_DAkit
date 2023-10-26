@@ -1,5 +1,6 @@
 # find the symmetry and standardlized cell of a given dir
 
+import argparse
 import io
 import subprocess
 import sys
@@ -14,6 +15,7 @@ from ase.io import read, write
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
+from cdakit.iotools import to_format_table
 
 def atoms2cif(atoms):
     with io.BytesIO() as buffer, redirect_stdout(buffer):
@@ -64,7 +66,7 @@ def get_spg_one(name: Path, atoms, symprec_list, angle_tolerance=10):
     return pd.Series(spg_dict)
 
 
-def get_spg(fdir, symprec_list=(0.5, 0.1, 0.01)):
+def get_spg_df(fdir, symprec_list=(0.5, 0.1, 0.01)):
     flist = list(Path(fdir).glob("*.vasp"))
     symprec_list = sorted(symprec_list, reverse=True)
     ser_list = Parallel(-1, backend="multiprocessing")(
@@ -74,19 +76,6 @@ def get_spg(fdir, symprec_list=(0.5, 0.1, 0.01)):
     df = pd.DataFrame(ser_list)
     df = df.sort_values(by=list(map("{:.0e}".format, symprec_list)), ascending=False)
     return df
-
-
-def to_format_csv(df: pd.DataFrame):
-    df = df[[col for col in df if not col.endswith(("_std_cif", "_std_vasp"))]]
-    csv_str = df.to_csv(None, sep=" ", index=False)
-    fmt_proc = subprocess.Popen(
-        ['column', '-t'],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    output, _ = fmt_proc.communicate(csv_str)
-    return output
 
 
 def write_std_vasp(df: pd.DataFrame, indir):
@@ -100,22 +89,15 @@ def write_std_vasp(df: pd.DataFrame, indir):
                 fvasp.write(ser[prec + "_std_vasp"])
 
 
-@click.command(help="python find_spg.py eval_gen_*/gen [-s 0.5 -s 0.1 -s 0.001]")
-@click.argument("indirs", nargs=-1)
-@click.option(
-    "-s",
-    "--symprec",
-    multiple=True,
-    default=[0.5, 0.1, 0.01],
-    help="symprec, can accept multiple time (not in one option)",
-)
-def cli_get_spg(indirs, symprec):
+def find_spg(indirs, symprec, **kwargs):
     spgdfdict = {}
     for indir in indirs:
-        df = get_spg(indir, symprec)
-        csv = to_format_csv(df)
+        df = get_spg_df(indir, symprec)
+        table = to_format_table(
+            df[[col for col in df if not col.endswith(("_std_cif", "_std_vasp"))]]
+        )
         with open(Path(indir).with_name("spg.txt"), 'w') as f:
-            f.write(csv)
+            f.write(table)
         write_std_vasp(df, indir)
         spgdfdict[Path(indir).parent.name] = df
 
@@ -125,5 +107,7 @@ def add_subparser(subparsers):
         __name__.split(".")[-1],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    # subparser.set_defaults()
-    subparser.add_argument("indirs" )
+    subparser.set_defaults(func=find_spg)
+    subparser.add_argument("indirs", nargs="*", help="directiries containing *.vasp")
+    subparser.add_argument("-s", "--symprec", type=float, default=[0.5, 0.1, 0.01], nargs=-1, help="symprec, only one significant digits is kept")
+

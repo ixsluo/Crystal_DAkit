@@ -1,8 +1,10 @@
 import argparse
 import logging
 
+import cdakit
 import cdakit.log
 import cdakit.prepare_vasp
+import cdakit.find_spg
 
 
 def main(verbose: int, **kwargs):
@@ -23,6 +25,7 @@ def cli():
     subparsers = parser.add_subparsers()
     # add subparser to subparsers
     cdakit.prepare_vasp.add_subparser(subparsers)
+    cdakit.find_spg.add_subparser(subparsers)
     # parse
     args, unknown_args = parser.parse_known_args()
     # calling main
