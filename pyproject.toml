@@ -11,7 +11,6 @@ build-backend = "setuptools.build_meta"
     ]
     dependencies = [
         "ase",
-        "click",
         "joblib",
         "numpy",
         "pandas",
@@ -21,7 +20,7 @@ build-backend = "setuptools.build_meta"
         "spglib",
         "tqdm",
     ]
-    requires-python = ">=3.8"
+    requires-python = ">=3.9"
     readme = "README.md"
     license = {text = ""}
     maintainers = [
@@ -31,7 +30,6 @@ build-backend = "setuptools.build_meta"
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.8",
         "Operating System :: POSIX :: Linux",
     ]
 
@@ -52,7 +50,7 @@ build-backend = "setuptools.build_meta"
     # documentation = ""
 
 [project.scripts]
-    cdakit = "crystal_dakit.cli:cli"
+    cdakit = "cdakit.main:cli"
 
 [tool.setuptools_scm]
     write_to = "./_version.py"
