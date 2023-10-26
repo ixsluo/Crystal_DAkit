@@ -88,7 +88,6 @@ def add_subparser(subparsers):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     subparser.set_defaults(func=prepare_vasp_batch)
-    # arguments
     subparser.add_argument("indir", help="directory containing *.vasp")
     subparser.add_argument("-u", "--uniqfile",                                            help="unique file to read")
     subparser.add_argument("-l", "--uniqlevel", choices=["lo", "md", "st"], default="lo", help="unique level of matcher used in uniqfile")
