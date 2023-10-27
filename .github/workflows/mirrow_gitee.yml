@@ -16,4 +16,4 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SYNC_GITEE_PRIVATE_KEY }}
         with:
           source-repo: "https://github.com/ixsluo/Crystal_DAkit.git"
-          destination-repo: "git@gitee.com:iccms-calypso/calypso-bohrium.git"
+          destination-repo: "git@gitee.com:xiaoshan-luo/crystal_dakit.git"
