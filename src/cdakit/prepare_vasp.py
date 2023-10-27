@@ -73,7 +73,7 @@ def prepare_vasp_batch(
         uniqdf = read_format_table(uniqfile)
         if lv not in uniqdf.columns:
             raise KeyError(f"key '{uniqlevel}' not in {uniqfile}")
-        click.echo(f"using unique key '{lv}' in {uniqfile}")
+        logger.info(f"using unique key '{lv}' in {uniqfile}")
         uniqlist = list(uniqdf[uniqdf[lv]].index)
         flist = [fi for fi in flist if int(fi.stem) in uniqlist]
     Parallel(njobs, backend="multiprocessing")(
