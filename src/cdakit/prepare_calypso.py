@@ -9,10 +9,9 @@ from pathlib import Path
 
 import numpy as np
 from pymatgen.io.vasp import Poscar, Potcar
-from tqdm import tqdm
+from joblib import Parallel, delayed
 
-
-logger = logging.getLogger(__name__)
+from cdakit.log import logit
 
 
 def potcar2distmat(potcar: Potcar):
@@ -54,47 +53,56 @@ def vasp2inputdat(poscar, potcar, dist_ratio, popsize):
     return inputdat
 
 
-def prepare_calypso(indir, dist_ratio, popsize, calypsocmd, calypsotimeout, **kwargs):
+def prepare_calypso(queue, log_configurer, njobs, indir, dist_ratio, popsize, calypsocmd, calypsotimeout, **kwargs):
+    log_configurer(queue)
+
     indir = Path(indir)
+    Parallel(njobs)(
+        delayed(prepare_calypso_one)(indir, fposcar, dist_ratio, popsize, calypsocmd, calypsotimeout)
+        for fposcar in indir.rglob("POSCAR")
+    )
+
+
+def prepare_calypso_one(indir, fposcar, dist_ratio, popsize, calypsocmd, calypsotimeout):
+    logger = logging.getLogger(__name__)
     outdir = indir.with_name(f"{indir.name}.calypso")
-    for fposcar in indir.rglob("POSCAR"):
-        logger.info(f"Processing {fposcar.parent}")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            poscar = Poscar.from_file(fposcar)
-            potcar = Potcar.from_file(fposcar.with_name("POTCAR"))
-        calypsodir = outdir.joinpath(fposcar.parent.relative_to(indir))
-        logger.debug(f"{calypsodir=}")
-        calypsodir.mkdir(parents=True, exist_ok=True)
-        with open(calypsodir.joinpath("input.dat"), 'w') as f:
-            f.write(vasp2inputdat(poscar, potcar, dist_ratio, popsize))
-        shutil.copy(fposcar.with_name("INCAR"), calypsodir)
-        shutil.copy(fposcar.with_name("POTCAR"), calypsodir)
-        shutil.copy(fposcar.with_name("KPOINTS"), calypsodir)
-        # run calypso
-        try:
-            os.remove(calypsodir.joinpath("step"))
-        except FileNotFoundError:
-            pass
-        with open(calypsodir.joinpath("caly.log"), "w") as calylog:
-            proc = subprocess.run(
-                calypsocmd, stdout=calylog, stderr=subprocess.STDOUT, cwd=calypsodir,
-                timeout=calypsotimeout,
-            )
-        # split POSCAR_* to subdir
-        if proc.returncode != 0:
-            logger.error(f"Calling {calypsocmd} failed in {calypsodir}")
-        else:
-            for popi in range(1, popsize + 1):
-                calcdir = calypsodir.joinpath(f"calc/{popi}")
-                calcdir.mkdir(parents=True, exist_ok=True)
-                shutil.move(calypsodir / f"POSCAR_{popi}", calcdir / "POSCAR")
-                shutil.copy(calypsodir / "INCAR", calcdir)
-                shutil.copy(calypsodir / "POTCAR", calcdir)
-                shutil.copy(calypsodir / "KPOINTS", calcdir)
-        # clean dir
-        for pyfile in calypsodir.glob("*.py"):
-            os.remove(pyfile)
+    logger.info(f"Processing {fposcar.parent}")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        poscar = Poscar.from_file(fposcar)
+        potcar = Potcar.from_file(fposcar.with_name("POTCAR"))
+    calypsodir = outdir.joinpath(fposcar.parent.relative_to(indir))
+    logger.debug(f"{calypsodir=}")
+    calypsodir.mkdir(parents=True, exist_ok=True)
+    with open(calypsodir.joinpath("input.dat"), 'w') as f:
+        f.write(vasp2inputdat(poscar, potcar, dist_ratio, popsize))
+    shutil.copy(fposcar.with_name("INCAR"), calypsodir)
+    shutil.copy(fposcar.with_name("POTCAR"), calypsodir)
+    shutil.copy(fposcar.with_name("KPOINTS"), calypsodir)
+    # run calypso
+    try:
+        os.remove(calypsodir.joinpath("step"))
+    except FileNotFoundError:
+        pass
+    with open(calypsodir.joinpath("caly.log"), "w") as calylog:
+        proc = subprocess.run(
+            calypsocmd, stdout=calylog, stderr=subprocess.STDOUT, cwd=calypsodir,
+            timeout=calypsotimeout,
+        )
+    # split POSCAR_* to subdir
+    if proc.returncode != 0:
+        logger.error(f"Calling {calypsocmd} failed in {calypsodir}")
+    else:
+        for popi in range(1, popsize + 1):
+            calcdir = calypsodir.joinpath(f"calc/{popi}")
+            calcdir.mkdir(parents=True, exist_ok=True)
+            shutil.move(calypsodir / f"POSCAR_{popi}", calcdir / "POSCAR")
+            shutil.copy(calypsodir / "INCAR", calcdir)
+            shutil.copy(calypsodir / "POTCAR", calcdir)
+            shutil.copy(calypsodir / "KPOINTS", calcdir)
+    # clean dir
+    for pyfile in calypsodir.glob("*.py"):
+        os.remove(pyfile)
 
 
 def add_subparser(subparsers):
