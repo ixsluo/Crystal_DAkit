@@ -1,20 +1,30 @@
 import argparse
+import multiprocessing
 import logging
 
 import cdakit
 import cdakit.find_spg
-import cdakit.log
 import cdakit.match_structure
 import cdakit.prepare_calypso
 import cdakit.prepare_vasp
+from cdakit.log import loglistener
 
 
 def main(verbose: int, **kwargs):
-    cdakit.log.init(20 - 10 * verbose)
+    queue = multiprocessing.Queue(-1)
+    kwargs["logqueue"] = queue
+    kwargs["logconf"] = {"level": 20 - 10 * verbose}
+    # log listener
+    logproc = multiprocessing.Process(target=loglistener, args=(queue,))
+    logproc.start()
+    # worker
     func = kwargs.get("func", None)
-    logging.debug(f"{kwargs}")
     if func is not None:
-        func(**kwargs)
+        worker = multiprocessing.Process(target=func, kwargs=kwargs)
+        worker.start()
+        worker.join()
+    queue.put_nowait(None)
+    logproc.join()
 
 
 def cli():
