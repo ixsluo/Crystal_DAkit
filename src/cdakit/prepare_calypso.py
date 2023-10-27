@@ -77,33 +77,42 @@ def prepare_calypso_one(indir, fposcar, dist_ratio, popsize, calypsocmd, calypso
     calypsodir.mkdir(parents=True, exist_ok=True)
     with open(calypsodir.joinpath("input.dat"), 'w') as f:
         f.write(vasp2inputdat(poscar, potcar, dist_ratio, popsize))
-    shutil.copy(fposcar.with_name("INCAR"), calypsodir)
-    shutil.copy(fposcar.with_name("POTCAR"), calypsodir)
-    shutil.copy(fposcar.with_name("KPOINTS"), calypsodir)
+    for f in ["INCAR", "POTCAR", "KPOINTS"]:
+        try:
+            shutil.copy(fposcar.with_name(f), calypsodir)
+        except FileNotFoundError:
+            logger.warning(f"{str(fposcar.with_name(f))} not found")
     # run calypso
     try:
         os.remove(calypsodir.joinpath("step"))
     except FileNotFoundError:
         pass
     with open(calypsodir.joinpath("caly.log"), "w") as calylog:
-        proc = subprocess.run(
-            calypsocmd, stdout=calylog, stderr=subprocess.STDOUT, cwd=calypsodir,
-            timeout=calypsotimeout,
-        )
-    # split POSCAR_* to subdir
-    if proc.returncode != 0:
-        logger.error(f"Calling {calypsocmd} failed in {calypsodir}")
-    else:
-        for popi in range(1, popsize + 1):
-            calcdir = calypsodir.joinpath(f"calc/{popi}")
-            calcdir.mkdir(parents=True, exist_ok=True)
-            shutil.move(calypsodir / f"POSCAR_{popi}", calcdir / "POSCAR")
-            shutil.copy(calypsodir / "INCAR", calcdir)
-            shutil.copy(calypsodir / "POTCAR", calcdir)
-            shutil.copy(calypsodir / "KPOINTS", calcdir)
-    # clean dir
-    for pyfile in calypsodir.glob("*.py"):
-        os.remove(pyfile)
+        try:
+            proc = subprocess.run(
+                calypsocmd, stdout=calylog, stderr=subprocess.STDOUT, cwd=calypsodir,
+                timeout=calypsotimeout,
+            )
+        except subprocess.TimeoutExpired:
+            logger.error(f"CALYPSO failed in {str(calypsodir)}")
+        else:
+            # split POSCAR_* to subdir
+            if proc.returncode != 0:
+                logger.error(f"Calling {calypsocmd} failed in {calypsodir}")
+            else:
+                for popi in range(1, popsize + 1):
+                    calcdir = calypsodir.joinpath(f"calc/{popi}")
+                    calcdir.mkdir(parents=True, exist_ok=True)
+                    shutil.move(calypsodir / f"POSCAR_{popi}", calcdir / "POSCAR")
+                    for f in ["INCAR", "POTCAR", "KPOINTS"]:
+                        try:
+                            shutil.copy(calypsodir / f, calcdir)
+                        except FileNotFoundError:
+                            pass
+        finally:
+            # clean dir
+            for pyfile in calypsodir.glob("*.py"):
+                os.remove(pyfile)
 
 
 def add_subparser(subparsers):
@@ -117,4 +126,4 @@ def add_subparser(subparsers):
     subparser.add_argument("-r", "--dist_ratio", type=float, default=0.7, help="distance ratio multipied on RCORE to generate DistanceOfIon")
     subparser.add_argument("-p", "--popsize", type=int, default=10, help="PopSize")
     subparser.add_argument("-c", "--calypsocmd", default="calypso.x", help="CALYPSO executable file")
-    subparser.add_argument("--calypsotimeout", type=float, default=120, help="maxtime for each calypso subprocess")
+    subparser.add_argument("-t", "--calypsotimeout", type=float, default=180, help="maxtime for each calypso subprocess")
