@@ -7,6 +7,7 @@ from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core.structure import Structure
 
 from cdakit.iotools import to_format_table
+from cdakit.log import logit
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ def match_structure(
     return df
 
 
+@logit()
 def matchtarget(indir, target, **kwargs):
     indir = Path(indir).resolve()
     target = Path(target).resolve()

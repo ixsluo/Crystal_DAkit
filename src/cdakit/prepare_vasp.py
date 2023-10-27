@@ -10,6 +10,7 @@ from pymatgen.io.vasp.sets import MPRelaxSet
 from tqdm import tqdm
 
 from cdakit.iotools import read_format_table
+from cdakit.log import logit
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ def wrapped_prepare_task(indir, uniq, uniqlevel, sf, vaspargs):
     prepare_task(structure, relax_path, vaspargs)
 
 
+@logit()
 def prepare_vasp_batch(
     indir, uniqfile, uniqlevel,njobs, ediff, ediffg, nsw, pstress, kspacing, sym, **kwargs
 ):
@@ -73,7 +75,7 @@ def prepare_vasp_batch(
         uniqdf = read_format_table(uniqfile)
         if lv not in uniqdf.columns:
             raise KeyError(f"key '{uniqlevel}' not in {uniqfile}")
-        click.echo(f"using unique key '{lv}' in {uniqfile}")
+        logger.info(f"using unique key '{lv}' in {uniqfile}")
         uniqlist = list(uniqdf[uniqdf[lv]].index)
         flist = [fi for fi in flist if int(fi.stem) in uniqlist]
     Parallel(njobs, backend="multiprocessing")(
