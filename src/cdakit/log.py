@@ -1,6 +1,8 @@
 import logging
 import logging.handlers
 from functools import wraps
+from multiprocessing import Queue
+from typing import Optional
 
 
 def listener_configurer():
@@ -11,7 +13,7 @@ def listener_configurer():
     root.addHandler(h)
 
 
-def loglistener(queue):
+def loglistener(queue: Queue):
     listener_configurer()
     while True:
         try:
@@ -26,8 +28,11 @@ def loglistener(queue):
             traceback.print_exc(file=sys.stderr)
 
 
-def worker_configurer(queue, level=20):
-    h = logging.handlers.QueueHandler(queue)  # Just the one handler needed
+def worker_configurer(queue: Optional[Queue] = None, level=20):
+    if queue is None:
+        h = logging.StreamHandler()
+    else:
+        h = logging.handlers.QueueHandler(queue)  # Just the one handler needed
     root = logging.getLogger()
     root.addHandler(h)
     root.setLevel(level)
@@ -39,7 +44,7 @@ class logit:
 
     def __call__(self, func):
         @wraps(func)
-        def wrapper(logqueue, logconf: dict = {}, *args, **kwargs):
+        def wrapper(logqueue: Optional[Queue] = None, logconf: dict = {}, *args, **kwargs):
             if self.level is not None:
                 logconf["level"] = self.level
             worker_configurer(logqueue, **logconf)
