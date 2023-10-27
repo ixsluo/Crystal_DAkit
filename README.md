@@ -3,6 +3,7 @@
 ## Features
 
 - prepare_vasp (required pymatgen and VASP pseudopotentials)
+- prepare_calypso
 - find_spg
 - match_structure
 
