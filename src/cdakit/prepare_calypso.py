@@ -14,6 +14,9 @@ from joblib import Parallel, delayed
 from cdakit.log import logit
 
 
+logger = logging.getLogger(__name__)
+
+
 def potcar2distmat(potcar: Potcar):
     rc = [p.RCORE for p in potcar]
     distmat = np.asarray([(i + j) * 0.529177 for i, j in product(rc, repeat=2)])
@@ -53,18 +56,16 @@ def vasp2inputdat(poscar, potcar, dist_ratio, popsize):
     return inputdat
 
 
-def prepare_calypso(queue, log_configurer, njobs, indir, dist_ratio, popsize, calypsocmd, calypsotimeout, **kwargs):
-    log_configurer(queue)
-
+@logit()
+def prepare_calypso(njobs, indir, dist_ratio, popsize, calypsocmd, calypsotimeout, **kwargs):
     indir = Path(indir)
-    Parallel(njobs)(
+    Parallel(njobs, backend="multiprocessing")(
         delayed(prepare_calypso_one)(indir, fposcar, dist_ratio, popsize, calypsocmd, calypsotimeout)
         for fposcar in indir.rglob("POSCAR")
     )
 
 
 def prepare_calypso_one(indir, fposcar, dist_ratio, popsize, calypsocmd, calypsotimeout):
-    logger = logging.getLogger(__name__)
     outdir = indir.with_name(f"{indir.name}.calypso")
     logger.info(f"Processing {fposcar.parent}")
     with warnings.catch_warnings():
@@ -72,7 +73,7 @@ def prepare_calypso_one(indir, fposcar, dist_ratio, popsize, calypsocmd, calypso
         poscar = Poscar.from_file(fposcar)
         potcar = Potcar.from_file(fposcar.with_name("POTCAR"))
     calypsodir = outdir.joinpath(fposcar.parent.relative_to(indir))
-    logger.debug(f"{calypsodir=}")
+    logger.debug(f"calypsodir: {str(calypsodir)}")
     calypsodir.mkdir(parents=True, exist_ok=True)
     with open(calypsodir.joinpath("input.dat"), 'w') as f:
         f.write(vasp2inputdat(poscar, potcar, dist_ratio, popsize))

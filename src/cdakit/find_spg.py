@@ -16,6 +16,8 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from cdakit.iotools import to_format_table
+from cdakit.log import logit
+
 
 def atoms2cif(atoms):
     with io.BytesIO() as buffer, redirect_stdout(buffer):
@@ -89,6 +91,7 @@ def write_std_vasp(df: pd.DataFrame, indir):
                 fvasp.write(ser[prec + "_std_vasp"])
 
 
+@logit()
 def find_spg(indirs, symprec, **kwargs):
     spgdfdict = {}
     for indir in indirs:
