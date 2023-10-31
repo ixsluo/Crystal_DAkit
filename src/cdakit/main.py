@@ -7,6 +7,7 @@ import cdakit.find_spg
 import cdakit.match_structure
 import cdakit.prepare_calypso
 import cdakit.prepare_vasp
+import cdakit.standardize
 from cdakit.log import loglistener
 
 
@@ -40,6 +41,7 @@ def cli():
     cdakit.match_structure.add_subparser(subparsers)
     cdakit.prepare_calypso.add_subparser(subparsers)
     cdakit.prepare_vasp.add_subparser(subparsers)
+    cdakit.standardize.add_subparser(subparsers)
     # parse
     args, unknown_args = parser.parse_known_args()
     # calling main

@@ -55,12 +55,14 @@ def match_structure(
     data = {}
     for mat_name, matcher in matchers.items():
         fitdict = {i: matcher.fit(gtst, st) for i, st in st_dict.items()}
-        data[mat_name] = pd.Series(fitdict)
         distdict = {
-            i: (matcher.get_rms_dist(gtst, st_dict[i])[0] if fit else pd.NA)
+            i: (matcher.get_rms_dist(gtst, st_dict[i]) if fit else (pd.NA, pd.NA))
             for i, fit in fitdict.items()
         }
-        data[mat_name + "_avgd"] = pd.Series(distdict)
+
+        data[mat_name] = pd.Series(fitdict)
+        data[f"{mat_name}_normrms"] = pd.Series({k: v[0] for k, v in distdict.items()})
+        data[f"{mat_name}_maxrms"] = pd.Series({k: v[1] for k, v in distdict.items()})
 
     df = pd.DataFrame(data)
 
