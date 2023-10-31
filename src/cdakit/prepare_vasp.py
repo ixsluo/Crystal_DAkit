@@ -12,7 +12,6 @@ from tqdm import tqdm
 from cdakit.iotools import read_format_table
 from cdakit.log import logit
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -61,9 +60,7 @@ def wrapped_prepare_task(indir, uniq, uniqlevel, sf, vaspargs):
 
 
 @logit()
-def prepare_vasp_batch(
-    indir, uniqfile, uniqlevel,njobs, ediff, ediffg, nsw, pstress, kspacing, sym, **kwargs
-):
+def prepare_vasp_batch(indir, uniqfile, uniqlevel, njobs, ediff, ediffg, nsw, pstress, kspacing, sym, **kwargs):
     vaspargs = {"ediff": ediff, "ediffg": ediffg, "nsw": nsw,
                "pstress": pstress, "kspacing": kspacing, "sym": sym}
     logger.info("You are using " + " ".join(f"{k}={v}" for k, v in vaspargs.items()))
