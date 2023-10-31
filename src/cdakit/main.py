@@ -5,6 +5,7 @@ import logging
 import cdakit
 import cdakit.find_spg
 import cdakit.match_structure
+import cdakit.parse_outcar
 import cdakit.prepare_calypso
 import cdakit.prepare_vasp
 import cdakit.standardize
@@ -39,6 +40,7 @@ def cli():
     # add subparser to subparsers
     cdakit.find_spg.add_subparser(subparsers)
     cdakit.match_structure.add_subparser(subparsers)
+    cdakit.parse_outcar.add_subparser(subparsers)
     cdakit.prepare_calypso.add_subparser(subparsers)
     cdakit.prepare_vasp.add_subparser(subparsers)
     cdakit.standardize.add_subparser(subparsers)
