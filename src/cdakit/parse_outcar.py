@@ -55,7 +55,8 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
     else:
         PVlist = PVlist[:len(energylist)]
     extpres = extpres[:len(energylist)]
-    converge = [converge] * len(energylist)
+    convergelist = [False] * len(energylist)
+    convergelist[-1] = converge
     cputime = [cputime] * len(energylist)
     natoms = [natoms] * len(energylist)
     formula = [formula] * len(energylist)
@@ -66,7 +67,7 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
             "volume": Vlist,
             "PV": PVlist,
             "extpressure": extpres,
-            "converge": converge,
+            "converge": convergelist,
             "cputime": cputime,
             "natoms": natoms,
             "nsites": natoms,
