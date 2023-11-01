@@ -83,7 +83,7 @@ def stat_outcar_dfdict(dfdict: dict[str, pd.DataFrame]) -> pd.DataFrame:
         ser = pd.Series(
             {
                 "formula": df.at[0, "formula"],
-                "converge": all(df.converge),
+                "converge": df.converge.iloc[-1],
                 "decreased_enth": df.at[0, "enthalpy"] - df.at[len(df) - 1, "enthalpy"],
                 "ion_steps": len(df),
                 "natoms": df.at[0, "natoms"],
