@@ -55,7 +55,8 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
     else:
         PVlist = PVlist[:len(energylist)]
     extpres = extpres[:len(energylist)]
-    converge = [converge] * len(energylist)
+    convergelist = [False] * len(energylist)
+    convergelist[-1] = converge
     cputime = [cputime] * len(energylist)
     natoms = [natoms] * len(energylist)
     formula = [formula] * len(energylist)
@@ -66,7 +67,7 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
             "volume": Vlist,
             "PV": PVlist,
             "extpressure": extpres,
-            "converge": converge,
+            "converge": convergelist,
             "cputime": cputime,
             "natoms": natoms,
             "nsites": natoms,
@@ -82,7 +83,7 @@ def stat_outcar_dfdict(dfdict: dict[str, pd.DataFrame]) -> pd.DataFrame:
         ser = pd.Series(
             {
                 "formula": df.at[0, "formula"],
-                "converge": all(df.converge),
+                "converge": df.converge.iloc[-1],
                 "decreased_enth": df.at[0, "enthalpy"] - df.at[len(df) - 1, "enthalpy"],
                 "ion_steps": len(df),
                 "natoms": df.at[0, "natoms"],
@@ -100,6 +101,8 @@ def stat_outcar_dfdict(dfdict: dict[str, pd.DataFrame]) -> pd.DataFrame:
 def parse_outcar(indir, njobs, *args, **kwargs):
     indir = Path(indir)
     outcars = list(chain(indir.rglob("OUTCAR"), indir.rglob("*.OUTCAR")))
+    if len(outcars) == 0:
+        raise ValueError("No OUTCAR or *.OUTCAR found")
     parsed_dflist = Parallel(njobs, backend="multiprocessing")(
         delayed(parse_one_outcar)(foutcar)
         for foutcar in tqdm(outcars, ncols=120)

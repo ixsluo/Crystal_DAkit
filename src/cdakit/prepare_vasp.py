@@ -92,7 +92,7 @@ def add_subparser(subparsers):
     subparser.add_argument("-l", "--uniqlevel", choices=["lo", "md", "st"], default="lo", help="unique level of matcher used in uniqfile")
     subparser.add_argument("-e", "--ediff", type=float,                                   help="EDIFF, autogenerate by pyamtgen if None")
     subparser.add_argument("-eg", "--ediffg", type=float,                                 help="EDIFFG")
-    subparser.add_argument("-n", "--nsw", type=float, default=0,                          help="NSW")
+    subparser.add_argument("-n", "--nsw", type=int , default=0,                          help="NSW")
     subparser.add_argument("-p", "--pstress", type=float, default=0,                      help="PSTRESS(kbar)")
     subparser.add_argument("-ks", "--kspacing",                                           help="KSPACING")
     subparser.add_argument("-s", "--sym", type=int, default=0,                            help="ISYM, suggest 0/2")
