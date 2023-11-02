@@ -114,7 +114,8 @@ def parse_outcar(indir, njobs, *args, **kwargs):
     stat_df = stat_outcar_dfdict(parsed_dfdict)
     print(stat_df)
     with open(indir.joinpath("parsed_outcar.pkl"), "wb") as f:
-        pickle.dump(parsed_dfdict, f)
+        parsed_df = pd.DataFrame(parsed_dfdict, keys=parsed_dfdict.keys())
+        pickle.dump(parsed_df, f)
     with open(indir.joinpath("parsed_outcar.table"), "w") as f:
         f.write(to_format_table(stat_df))
 
