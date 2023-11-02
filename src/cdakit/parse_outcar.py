@@ -6,7 +6,7 @@ from itertools import chain
 from pathlib import Path
 
 import pandas as pd
-from ase.formula import Formula
+from ase.io import read
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
@@ -37,21 +37,20 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
         parsed properties of each step
     """
     foutcar = Path(foutcar)
+    try:
+        atoms = read(foutcar.with_name("CONTCAR"), format="vasp")
+    except Exception:
+        raise ValueError("read CONTCAR error!")
+    formula = atoms.get_chemical_formula("metal")
     energylist = []  # eV
     Vlist = []
     PVlist = []  # eV
     extpres = []  # kbar
     converge = False
     cputime = pd.NA
-    natoms = pd.NA
-    formula = pd.NA
     with open(foutcar, "r") as f:
         for line in f:
-            if "NIONS" in line:
-                natoms = int(line.strip().split()[-1])
-            elif "POSCAR =" in line:
-                formula = Formula(line.strip()[8:].replace(" ", "")).format("metal")
-            elif "energy  without" in line:
+            if "energy  without" in line:
                 energylist.append(float(line.strip().split()[-1]))
             elif "P V=" in line:
                 PVlist.append(float(line.strip().split()[-1]))
@@ -78,7 +77,7 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
     convergelist = [False] * len(energylist)
     convergelist[-1] = converge
     cputime = [cputime] * len(energylist)
-    natoms = [natoms] * len(energylist)
+    natoms = [len(atoms)] * len(energylist)
     formula = [formula] * len(energylist)
     parsed_df = pd.DataFrame(
         {
