@@ -17,6 +17,26 @@ logger = logging.getLogger(__name__)
 
 
 def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
+    """Parse OUTCAR to pandas DataFrame
+
+    .. code-block:: text
+            formula energy volume PV extpressure converge cputime natoms nsites ...
+       step
+          0     ...
+
+    set pd.NA if failed
+
+    Parameters
+    ----------
+    foutcar : Path
+        Path to OUTCAR
+
+    Returns
+    -------
+    pd.DataFrame
+        parsed properties of each step
+    """
+    foutcar = Path(foutcar)
     energylist = []  # eV
     Vlist = []
     PVlist = []  # eV
@@ -74,6 +94,7 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
         }
     )
     parsed_df["enthalpy"] = parsed_df["energy"] + parsed_df["PV"]
+    parsed_df.index.name = "step"
     return parsed_df
 
 
@@ -94,6 +115,7 @@ def stat_outcar_dfdict(dfdict: dict[str, pd.DataFrame]) -> pd.DataFrame:
         serlist.append(ser)
     stat_df = pd.DataFrame(serlist)
     stat_df["decreased_enth_per_atom"] = stat_df["decreased_enth"] / stat_df["natoms"]
+    stat_df.index.name = "fname"
     return stat_df
 
 
@@ -113,8 +135,11 @@ def parse_outcar(indir, njobs, *args, **kwargs):
     }
     stat_df = stat_outcar_dfdict(parsed_dfdict)
     print(stat_df)
+
     with open(indir.joinpath("parsed_outcar.pkl"), "wb") as f:
-        pickle.dump(parsed_dfdict, f)
+        parsed_df = pd.concat(parsed_dfdict, keys=parsed_dfdict.keys())
+        parsed_df.index.names = ["fname", "step"]
+        pickle.dump(parsed_df, f)
     with open(indir.joinpath("parsed_outcar.table"), "w") as f:
         f.write(to_format_table(stat_df))
 
