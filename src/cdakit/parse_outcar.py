@@ -94,6 +94,7 @@ def parse_one_outcar(foutcar: Path) -> pd.DataFrame:
         }
     )
     parsed_df["enthalpy"] = parsed_df["energy"] + parsed_df["PV"]
+    parsed_df["enthalpy_per_atom"] = parsed_df["enthalpy"] / parsed_df["natoms"]
     parsed_df.index.name = "step"
     return parsed_df
 
