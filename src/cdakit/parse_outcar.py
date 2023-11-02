@@ -101,6 +101,8 @@ def stat_outcar_dfdict(dfdict: dict[str, pd.DataFrame]) -> pd.DataFrame:
 def parse_outcar(indir, njobs, *args, **kwargs):
     indir = Path(indir)
     outcars = list(chain(indir.rglob("OUTCAR"), indir.rglob("*.OUTCAR")))
+    if len(outcars) == 0:
+        raise ValueError("No OUTCAR or *.OUTCAR found")
     parsed_dflist = Parallel(njobs, backend="multiprocessing")(
         delayed(parse_one_outcar)(foutcar)
         for foutcar in tqdm(outcars, ncols=120)
